@@ -1,12 +1,12 @@
 # Unified Decision-Making and Control Framework for Urban Autonomous Driving
-> This driving framework is based on optimization methods, so it is light-weighted, interpretable and adaptable to various driving scenarios.
+> This autonomous driving framework is based on optimization methods, so it is light-weighted, interpretable and adaptable to various driving scenarios.
 > Live demo [_here_](https://youtu.be/Jn2BrnhnCoU). <!-- If you have the project hosted somewhere, include the link here. -->
 
 ## Table of Contents
 * [General Info](#general-information)
 * [Technologies Used](#technologies-used)
 * [Features](#features)
-* [Screenshots](#screenshots)
+* [Screenshots](#driving-demo-in-the-first-person-view)
 * [Setup](#setup)
 * [Usage](#usage)
 * [Project Status](#project-status)
@@ -39,6 +39,8 @@ List the ready features here:
 
 
 ## Driving Demo in the First-Person View
+
+https://github.com/henryhcliu/udmc_carla/assets/44318132/6fc9eeca-31ea-4b63-a758-3a0931abed86
 
 
 
