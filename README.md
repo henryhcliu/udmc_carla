@@ -41,7 +41,7 @@ List the ready features here:
 ## Driving Demo in the First-Person View
 
 
-https://github.com/henryhcliu/udmc_carla/assets/44318132/e23f58be-ef6e-4e17-93ef-3ef4fec1c03a
+https://github.com/henryhcliu/udmc_carla/assets/44318132/35b92625-d4da-4556-bda9-f01cc2a021c1
 
 
 ## Setup
