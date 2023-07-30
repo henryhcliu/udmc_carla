@@ -1,12 +1,13 @@
 # Unified Decision-Making and Control Framework for Urban Autonomous Driving
-> This autonomous driving framework is based on optimization methods, so it is light-weighted, interpretable and adaptable to various driving scenarios.
+> This autonomous driving framework is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
+> Please note that the repository will be made available after the paper is published.
 > Live demo [_here_](https://youtu.be/Jn2BrnhnCoU). <!-- If you have the project hosted somewhere, include the link here. -->
 
 ## Table of Contents
 * [General Info](#general-information)
 * [Technologies Used](#technologies-used)
 * [Features](#features)
-* [Screenshots](#driving-demo-in-the-first-person-view)
+* [Driving Demo](#driving-demo-in-the-first-person-view)
 * [Setup](#setup)
 * [Usage](#usage)
 * [Project Status](#project-status)
@@ -83,16 +84,19 @@ cd udmc_carla # Open the folder where this repository exists
 ```
 ### Run the UDMC with different driving scenario settings and surrounding vehicle spawn options
 ```Shell 
-# crossroad driving with randomly generated surrounding vehicles
-python udmc_main.py crossroad True
-
-# multilane ACC driving with randomly generated surrounding vehicles
+# Multilane ACC driving with randomly generated surrounding vehicles
 python udmc_main.py multilaneACC True
 
-# roundabout driving with randomly generated surrounding vehicles
+# Roundabout driving with randomly generated surrounding vehicles
 python udmc_main.py roundabout True
+
+# Crossroad driving with randomly generated surrounding vehicles
+python udmc_main.py crossroad True
+
+# Unsignalized crossroad driving with randomly generated surrounding vehicles
+python udmc_main.py unsig_crossroad True
 ```
-If you want to spawn surrounding vehicles with certain spawnpoints (to test the performance of different methods), please change the last argument to `False`.
+If you want to spawn surrounding vehicles with certain spawn points (to test the performance of different methods under the same condition), please change the last argument to `False`.
 ### Run the Parameter Identification of the vehicle dynamics model
 ```Shell
 python param_est_using_slsqp.py
@@ -134,7 +138,7 @@ Created by [@henryhcliu](https://www.linkedin.com/in/haichaoliu) - feel free to 
 
 
 <!-- Optional -->
-## License -->
+## License
 This project is open source and available under the [MIT License](https://opensource.org/license/mit/).
 
 <!-- You don't have to include all sections - just the one's relevant to your project -->
