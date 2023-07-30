@@ -1,7 +1,7 @@
-# Unified Decision-Making and Control Framework for Urban Autonomous Driving
-> This autonomous driving framework is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
+# A Unified Decision-Making and Control Framework for Urban Autonomous Driving
+> This autonomous driving framework (named UDMC) is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
 > Please note that the repository will be made available after the paper is published.
-> Live demo [_here_](https://youtu.be/Jn2BrnhnCoU). <!-- If you have the project hosted somewhere, include the link here. -->
+> Live demo [_here_](https://youtu.be/Jn2BrnhnCoU).
 
 ## Table of Contents
 * [General Info](#general-information)
@@ -10,11 +10,11 @@
 * [Driving Demo](#driving-demo-in-the-first-person-view)
 * [Setup](#setup)
 * [Usage](#usage)
+* [File Structure](#file-structure)
 * [Project Status](#project-status)
-* [Room for Improvement](#room-for-improvement)
 * [Acknowledgements](#acknowledgements)
 * [Contact](#contact)
-<!-- * [License](#license) -->
+* [License](#license)
 
 
 ## General Information
