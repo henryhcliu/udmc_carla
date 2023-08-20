@@ -1,0 +1,13 @@
+numpy==1.24.3
+tqdm
+simple_pid
+pygame
+networkx
+shapely
+matplotlib
+opencv-python
+carla==0.9.13
+scikit-learn
+casadi
+keras
+carla-birdeye-view=1.1.1
