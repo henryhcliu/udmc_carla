@@ -1,7 +1,7 @@
-# A Unified Decision-Making and Control Framework for Urban Autonomous Driving
+# A Unified Decision-Making and Control Framework for Urban Autonomous Driving with Traffic Rule Compliance
 > This autonomous driving framework (named UDMC) is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
 > Please note that the repository will be made available after the paper is published.
-> Live demo [_here_](https://youtu.be/Jn2BrnhnCoU).
+> Live demo [_here_](https://www.youtube.com/watch?v=Y2zW75wiC00).
 
 ## Table of Contents
 * [General Info](#general-information)
@@ -18,9 +18,9 @@
 
 
 ## General Information
-- This project contains the necessary code for our presented UDMC. We tested it on varieties of scenarios, such as multi-lane adaptive cruise control, roundabout driving, intersection crossing, and so on.
-- The purpose of this project is to build a versatile and light-weighted autonomous driving framework from V2X perception to motion control, settling the problems of the hierarchical rule-based and optimization-based framework (complex pipeline design, low computational efficiency), and the problems of the end-to-end framework (not interpretable, time-consuming training process, low safety guarantee). And this driving framework settles the traffic rule compliance problem using the artificial potential field, rather than if-else commands in most current literature.
-- This project improves the adaptability and computational efficiency of autonomous driving to various urban driving conditions under the guarantee of safety with traffic rule compliance.
+- This project contains the necessary code for our presented UDMC. We tested it on varieties of scenarios, such as multi-lane adaptive cruise control (ACC), roundabout driving, intersection crossing, T-junction crossing with pedestrians, and so on.
+- The purpose of this project is to build a versatile and light-weighted autonomous driving framework from V2X perception to motion control, settling the problems of the hierarchical rule-based and optimization-based framework (complex pipeline design, low computational efficiency), and the problems of the end-to-end framework (not interpretable, time-consuming training process, low safety guarantee). 
+- This driving framework settles the traffic rule compliance problem using the artificial potential field, rather than if-else commands in most current literature.
 <!-- You don't have to answer all the questions - just the ones relevant to your project. -->
 
 
@@ -28,11 +28,10 @@
 - Ubuntu 20.04
 - Python 3.8 with `requirements.txt`
 - CasADi 3.6.3
-- CARLA 0.9.13
+- CARLA 0.9.14
 
 
 ## Features
-List the ready features here:
 - light-weighted
 - interpretable
 - various scenarios adaptable
@@ -43,6 +42,10 @@ List the ready features here:
 
 
 https://github.com/henryhcliu/udmc_carla/assets/44318132/35b92625-d4da-4556-bda9-f01cc2a021c1
+
+## Driving Demo in the Bird's-Eye View
+
+https://github.com/henryhcliu/udmc_carla/assets/44318132/84f56c8b-dbd6-482a-83eb-3651fedea4dc
 
 
 ## Setup
@@ -62,12 +65,12 @@ conda activate udmc_carla
 pip3 install -r requirements.txt
 ```
 
-Download and setup CARLA 0.9.13
+Download and setup CARLA 0.9.14
 ```Shell
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1AF1527DE64CB8D9
 sudo add-apt-repository "deb [arch=amd64] http://dist.carla.org/carla $(lsb_release -sc) main"
 sudo apt-get update # Update the Debian package index
-sudo apt-get install carla-simulator=0.9.13 # Install the 0.9.13 CARLA version
+sudo apt-get install carla-simulator=0.9.14 # Install the 0.9.14 CARLA version
 cd /opt/carla-simulator # Open the folder where CARLA is installed
 ./CarlaUE4.sh
 ```
@@ -95,6 +98,9 @@ python udmc_main.py crossroad True
 
 # Unsignalized crossroad driving with randomly generated surrounding vehicles
 python udmc_main.py unsig_crossroad True
+
+# T-junction driving with pedestrians and randomly generated surrounding vehicles
+python udmc_main.py mixed_traffic True
 ```
 If you want to spawn surrounding vehicles with certain spawn points (to test the performance of different methods under the same condition), please change the last argument to `False`.
 ### Run the Parameter Identification of the vehicle dynamics model
@@ -116,7 +122,7 @@ If you want to modify this driving system to adapt to specific applications, ple
 -scripts # core implementation of the UDMC
     - env.py # interact with CARLA, it includes spawn vehicles, initial visualization, and CARLA environment, etc.
     - others_agent.py # Be in charge of the behavior of other vehicles, like following the lane and changing lane
-    - vehicle_obs.py # the IDAC core with traffic rules (lane keeping, not running to solid lane markings, not running a red light, etc)
+    - vehicle_obs.py # the UDMC core with traffic rules (lane keeping, not running to solid lane markings, not running a red light, etc)
     - x_v2x_agent.py # implement the main function, such as acc, overtaking, and parking
 -spawnpoints # contains the spawn points for the surrounding vehicles when not using `random_spawn` mode
 -utils # some third-party or commonly-used function
