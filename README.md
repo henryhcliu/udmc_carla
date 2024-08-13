@@ -1,7 +1,9 @@
 # A Unified Decision-Making and Control Framework for Urban Autonomous Driving with Traffic Rule Compliance
 > This autonomous driving framework (named UDMC) is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
+
 > Please note that the repository will be made available after the paper is published.
-> Live demo [_here_](https://www.youtube.com/watch?v=Y2zW75wiC00).
+
+> Live demo [https://www.youtube.com/watch?v=jftTsf1jXjU](https://www.youtube.com/watch?v=jftTsf1jXjU).
 
 ## Table of Contents
 * [General Info](#general-information)
@@ -18,9 +20,16 @@
 
 
 ## General Information
-- This project contains the necessary code for our presented UDMC. We tested it on varieties of scenarios, such as multi-lane adaptive cruise control (ACC), roundabout driving, intersection crossing, T-junction crossing with pedestrians, and so on.
-- The purpose of this project is to build a versatile and light-weighted autonomous driving framework from V2X perception to motion control, settling the problems of the hierarchical rule-based and optimization-based framework (complex pipeline design, low computational efficiency), and the problems of the end-to-end framework (not interpretable, time-consuming training process, low safety guarantee). 
-- This driving framework settles the traffic rule compliance problem using the artificial potential field, rather than if-else commands in most current literature.
+<!-- Insert the udmc_structure.png figure using 0.5\width width -->
+
+<div style="text-align:center;">
+  <img src="img/udmc_structure.png" alt="The Structure of the UDMC" width="70%" />
+</div>
+
+- This project contains the necessary code for our presented Unified Decision-Making and Control (UDMC) scheme for urban driving. 
+- The purpose of this project is to build a uniformed, versatile and light-weighted autonomous driving framework for both decision-making and motion control.
+- This driving framework settles the complex traffic rule compliance problem using the artificial potential field (APF), rather than if-else commands in most current rule-based methods.
+- We tested it on varieties of scenarios (car following, overtaking, roundabout, intersection, T-junction, etc.) and `CARLA Town05 Benchmark`.
 <!-- You don't have to answer all the questions - just the ones relevant to your project. -->
 
 
@@ -32,20 +41,21 @@
 
 
 ## Features
-- light-weighted
-- interpretable
-- various scenarios adaptable
-- traffic rules compliance
+- Lightweight Design
+- Interpretability
+- Broad Applicability for Urban Road Networks
+- Compliance with Traffic Regulations
 
 
-## Driving Demo in the First-Person View
+## Driving Demo
 
+### Driving Demo in the First-Person View
+<!-- insert the roundabout_animation.gif file here -->
+![Roundabout Driving](img/roundabout_animation.gif)
 
-https://github.com/henryhcliu/udmc_carla/assets/44318132/35b92625-d4da-4556-bda9-f01cc2a021c1
-
-## Driving Demo in the Bird's-Eye View
-
-https://github.com/henryhcliu/udmc_carla/assets/44318132/84f56c8b-dbd6-482a-83eb-3651fedea4dc
+### Driving Demo in the Bird's-Eye View
+<!-- insert the .png file with a link of the YouTube video -->
+[![Bird's-Eye View](img/youtube_promotion.png)](https://www.youtube.com/watch?v=jftTsf1jXjU)
 
 
 ## Setup
@@ -103,6 +113,12 @@ python udmc_main.py unsig_crossroad True
 python udmc_main.py mixed_traffic True
 ```
 If you want to spawn surrounding vehicles with certain spawn points (to test the performance of different methods under the same condition), please change the last argument to `False`.
+### Run the UDMC with CARLA Town05 Benchmark
+```Shell
+cd leaderboard/scripts
+# Run the CARLA Town05 Benchmark automatically
+python local_evaluation.sh
+```
 ### Run the Parameter Identification of the vehicle dynamics model
 ```Shell
 python param_est_using_slsqp.py
@@ -136,8 +152,8 @@ Project is: _complete_
 
 
 ## Acknowledgements
-- Thanks to the CasADi [tutorial](https://web.casadi.org/docs/#nonlinear-programming)
-
+- Thanks to the CasADi [tutorial](https://web.casadi.org/docs/#nonlinear-programming).
+- Thanks to the CARLA [tutorial](https://carla.readthedocs.io/en/0.9.14/).
 
 ## Contact
 Created by [@henryhcliu](https://www.linkedin.com/in/haichaoliu) - feel free to contact me!
