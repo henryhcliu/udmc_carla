@@ -1,8 +1,8 @@
-# A Unified Decision-Making and Control Framework for Urban Autonomous Driving with Traffic Rule Compliance
+# UDMC: Unified Decision-Making and Control Framework for Urban Autonomous Driving with Motion Prediction of Traffic Participants
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/henryhcliu/udmc_carla/blob/main/LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.0-brightgreen)](https://github.com/henryhcliu/udmc_carla/releases/tag/v1.0)
 
-> This autonomous driving framework (named UDMC) is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
+> This autonomous driving framework (named UDMC) is based on optimization methods, so it is lightweight, interpretable, and adaptable to various driving scenarios.
 
 > Live demo [https://www.youtube.com/watch?v=jftTsf1jXjU](https://www.youtube.com/watch?v=jftTsf1jXjU).
 
@@ -160,9 +160,7 @@ Project is: _complete_
 - Thanks to the [CARLA](https://carla.readthedocs.io/en/0.9.14/).
 
 ## Contact
-Created by [@henryhcliu](https://henryhcliu.github.io) and [@kkkkai] - feel free to contact me!
+Created by [@henryhcliu](https://henryhcliu.github.io) - feel free to contact me!
 
-
-<!-- Optional -->
 ## License
 This project is open source and available under the [MIT License](https://opensource.org/license/mit/).
