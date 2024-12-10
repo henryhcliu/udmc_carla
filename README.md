@@ -1,7 +1,8 @@
 # A Unified Decision-Making and Control Framework for Urban Autonomous Driving with Traffic Rule Compliance
-> This autonomous driving framework (named UDMC) is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/henryhcliu/udmc_carla/blob/main/LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.0-brightgreen)](https://github.com/henryhcliu/udmc_carla/releases/tag/v1.0)
 
-> Please note that the repository will be made available after the paper is published.
+> This autonomous driving framework (named UDMC) is based on optimization methods, so it is light-weighted, interpretable, and adaptable to various driving scenarios.
 
 > Live demo [https://www.youtube.com/watch?v=jftTsf1jXjU](https://www.youtube.com/watch?v=jftTsf1jXjU).
 
@@ -112,13 +113,8 @@ python udmc_main.py unsig_crossroad True
 # T-junction driving with pedestrians and randomly generated surrounding vehicles
 python udmc_main.py mixed_traffic True
 ```
-If you want to spawn surrounding vehicles with certain spawn points (to test the performance of different methods under the same condition), please change the last argument to `False`.
-### Run the UDMC with CARLA Town05 Benchmark
-```Shell
-cd leaderboard/scripts
-# Run the CARLA Town05 Benchmark automatically
-python local_evaluation.sh
-```
+With runing the above command lines, the randomly generated initial spawn points of the traffic participants will be recorded in the folder `spawnPoints`. If you want to spawn surrounding vehicles with certain spawn points (to test the performance of different methods under the same condition), please change the last argument to `False`.
+
 ### Run the Parameter Identification of the vehicle dynamics model
 ```Shell
 python param_est_using_slsqp.py
@@ -128,9 +124,17 @@ This program prints the estimated parameters to the terminal.
 ```Shell
 python IGPR_predict_sv_wps.py
 ```
+### Run the UDMC with `CARLA Town05` Benchmark
+**Change to the branch of `town05short`**, and then run the following command:
+```Shell
+cd leaderboard/scripts
+# Run the CARLA Town05 Benchmark automatically
+./local_evaluation.sh 
+```
+Wait until the program is finished, and the evaluation result on the Town05 Short Benchmark can be inspected in the `results` folder.
 
 ## File structure
-If you want to modify this driving system to adapt to specific applications, please refer to the structure of this repository.
+If you want to modify this driving system to adapt to specific applications, please refer to the structure of this repository (`main` branch).
 ```bash
 -data # contains the Potential Functions' value and the control input during autonomous driving
 -images # contains the pictures captured by a camera mounted on the Ego Vehicle with T_s time step
@@ -142,7 +146,7 @@ If you want to modify this driving system to adapt to specific applications, ple
     - x_v2x_agent.py # implement the main function, such as acc, overtaking, and parking
 -spawnpoints # contains the spawn points for the surrounding vehicles when not using `random_spawn` mode
 -utils # some third-party or commonly-used function
--fms_main.py # run this code to execute the same simulation with udmc_main.py, but the Ego Vehicle uses Finite State Machine to control its motion
+-fms_main.py # run this code to execute the same simulation in same surrounding conditions with udmc_main.py, but the Ego Vehicle uses Finite State Machine to control its motion
 -IGPR_predict_sv_wps.py # use this code to train an IGPR model for surrounding vehicles' motion from 15 pieces of history state record to 10 pieces of future state prediction.
 -udmc_main.py # main entrance of this paper, run it from the command line with an augment (crossroad, multilaneACC, roundabout,...), before that you need to launch CarlaUE4 following the instruction above.
 ```
@@ -152,15 +156,13 @@ Project is: _complete_
 
 
 ## Acknowledgements
-- Thanks to the CasADi [tutorial](https://web.casadi.org/docs/#nonlinear-programming).
-- Thanks to the CARLA [tutorial](https://carla.readthedocs.io/en/0.9.14/).
+- Thanks to the [CasADi](https://web.casadi.org/docs/#nonlinear-programming).
+- Thanks to the [CARLA](https://carla.readthedocs.io/en/0.9.14/).
 
 ## Contact
-Created by [@henryhcliu](https://www.linkedin.com/in/haichaoliu) - feel free to contact me!
+Created by [@henryhcliu](https://henryhcliu.github.io) and [@kkkkai] - feel free to contact me!
 
 
 <!-- Optional -->
 ## License
 This project is open source and available under the [MIT License](https://opensource.org/license/mit/).
-
-<!-- You don't have to include all sections - just the one's relevant to your project -->

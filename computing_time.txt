@@ -1,0 +1,36 @@
+
+UDMC:Date and time: 2024-12-01 16:45:33.318825
+Scenario: multilaneACC
+Computing time: 0.02954429785410563
+SD of computing time: 0.007725101201699819
+TTC: nan
+SD of TTC: nan
+Risk time of TTC < 1.5: 0.0
+TTC Rate: 0.0
+THW: nan
+SD of THW: nan
+Risk time of THW < 2.0: 0.0
+THW Rate: 0.0
+Time to pass: 4.5
+Average inference time: 0.004306903252234826
+SD of inference time: 0.003049012704509642
+Total computing time: 0.03372828695509169
+SD of total computing time: 0.008030111528076575
+
+UDMC:Date and time: 2024-12-01 16:47:32.849282
+Scenario: roundabout
+Computing time: 0.017705487041938597
+SD of computing time: 0.0095463164298871
+TTC: nan
+SD of TTC: nan
+Risk time of TTC < 1.5: 0.0
+TTC Rate: 0.0
+THW: nan
+SD of THW: nan
+Risk time of THW < 2.0: 0.0
+THW Rate: 0.0
+Time to pass: 20.5
+Average inference time: 0.0015622444106424523
+SD of inference time: 0.0018851814290523218
+Total computing time: 0.019271541804802127
+SD of total computing time: 0.009819611205317493
