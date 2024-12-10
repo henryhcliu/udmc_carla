@@ -219,6 +219,10 @@ class Vehicle:
         self.ac_r = 10
         self.anc_r = 100
 
+    def reset_Q(self):
+        self.Q = self.Q_o
+        # print('Q is reset to ', self.Q)
+
     def solver_add_cost(self):
         self.obj = 0
         self.g = []  # equal constrains for multi-shooting
@@ -294,18 +298,21 @@ class Vehicle:
     #                     self.obj += 10*((1/dist)**expn)*ratio/(i+1)
 
     # the version 3 of solver_add_soft_obs [ellipsoid obstacle]
-    def solver_add_soft_obs(self, obs_infer, ratio=500, expn=1, carla=True, pede=False):
+    def solver_add_soft_obs(self, obs_infer, sizes=None, ratio=500, expn=1, carla=True, pede=False):
     # self.obj = 0
         if len(obs_infer[0]) < self.horizon:
             for ob_ in obs_infer:
                 for i in range(self.horizon - len(ob_)):
                     ob_.append(ob_[-1])
-        for ob_ in obs_infer:  # for each obstacle
+        for ob_,order in zip(obs_infer,range(len(obs_infer))):  # for each obstacle
             for i in range(self.horizon):  # for each time step
                 ob_center = self.get_obs_center(ob_[i], carla=carla)
                 for self_center in self.get_obs_centers(self.X[:, i], carla=carla):  # for each circle of the EV
                     if pede == False:
-                        dist = self.dist_point_to_ellipsoid(self_center, ob_center, ob_[i][2])
+                        if sizes is not None and sizes[order][1] > 2.4:
+                            dist = self.dist_point_to_ellipsoid(self_center, ob_center, ob_[i][2], a=sizes[order][0], b=sizes[order][1])
+                        else:
+                            dist = self.dist_point_to_ellipsoid(self_center, ob_center, ob_[i][2])
                     else:
                         dist = self.dist_point_to_ellipsoid(self_center, ob_center, ob_[i][2], a=0.5, b=0.5)
                     # decrease the weight when i is getting larger
@@ -337,8 +344,9 @@ class Vehicle:
         
         return obs_apf
     
-    def solver_add_soft_ttc(self, lv, ratio=100, expn=1, carla=True, pede=False):
+    def solver_add_soft_ttc(self, lv, ratio=5000, expn=1, carla=True, pede=False):
         v_lv = np.sqrt(lv.get_velocity().x**2 + lv.get_velocity().y**2)
+        yaw_lv = lv.get_transform().rotation.yaw
         lv = [lv.get_location().x, -lv.get_location().y, v_lv] # Add a negative sign to the y axis value to align with the right coordinate system
         for i in range(self.horizon):
             selfc = self.get_av_center(self.X[:, i], carla=carla)
@@ -348,7 +356,14 @@ class Vehicle:
                 ratio*(np.exp(((-dist2/((selfc[2]-lv[2])**2))+6)**expn)-1),
                 0
             )
-        print('---------------the apf for ttc is attached-----------------')
+            for self_center in self.get_obs_centers(self.X[:, i], carla=carla):  # for each circle of the EV
+                    if pede == False:
+                        dist = self.dist_point_to_ellipsoid(self_center, lv[:2], yaw_lv)
+                    else:
+                        dist = self.dist_point_to_ellipsoid(self_center, lv[:2], yaw_lv, a=0.5, b=0.5)
+                    # decrease the weight when i is getting larger
+                    self.obj += 12 * ((1 / dist-0.5) ** expn) * ratio / (2*(i + 1))
+        # print('---------------the apf for ttc is attached-----------------')
 
     def soft_ttc_apf(self, lv, ref_traj, ratio=400, expn=1, carla=False, pede=False):
         v_lv = np.sqrt(lv.get_velocity().x**2 + lv.get_velocity().y**2)
@@ -374,7 +389,7 @@ class Vehicle:
         ob_center = [ob_[0], ob_[1]]
         return ob_center
     
-    def dist_point_to_ellipsoid(self, point, center, yaw, a=2.3, b=1.0):
+    def dist_point_to_ellipsoid(self, point, center, yaw, a=2.4, b=1.0):
         '''
         Calculate the distance between a point and an ellipsoid
         Parameters:
@@ -434,6 +449,7 @@ class Vehicle:
                     dist < 0.5,
                     self.ac_r * (dist-1)**2,
                     0)
+        # print(' Crossable road lane PF added, with a road position of ', roads_pos)
                 
 
     def c_road_pf(self, roads_pos, ref_traj, yaw=0, carla=False):
@@ -480,6 +496,7 @@ class Vehicle:
                                 ),
                             0
                         )
+        # print(' Non-crossable road lane PF added, with a road position of ', roads_pos)
         
 
     def nc_road_pf(self, roads_pos, ref_traj, yaw=0, carla=False):

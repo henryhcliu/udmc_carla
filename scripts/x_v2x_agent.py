@@ -11,19 +11,20 @@ try:
                     os.path.dirname(
                         os.path.dirname(os.path.abspath(__file__))), 'utils'))
 except IndexError:
-    pass
+    print('Error: cannot add the path to sys')
 
 import copy
 import carla
 import math
 import numpy as np
-import utils.interpolate as itp
-import utils.carla_utils as ca_u
+import interpolate as itp
+import carla_utils as ca_u
 from enum import Enum
 from collections import deque
 from official.basic_agent import BasicAgent
 from official.misc import get_trafficlight_trigger_location, is_within_distance
 from official.global_route_planner import GlobalRoutePlanner
+from official.local_planner import LocalPlanner
 
 import matplotlib.pyplot as plt
 import time
@@ -42,7 +43,7 @@ class RoadOption(Enum):
 
 
 class Xagent(BasicAgent):
-    def __init__(self, env, model, dt=0.1) -> None:
+    def __init__(self, env, model, dt=0.1, target_speed=30) -> None:
         '''
         vehicle: carla
         model: kinematic/dynamic model
@@ -54,8 +55,8 @@ class Xagent(BasicAgent):
         self._world = self._vehicle.get_world()
         self._map = self._world.get_map()
 
-        self._base_min_distance = 5.0
-        self._waypoints_queue = deque(maxlen=100000)
+        self._base_min_distance = 3.0
+        # self._waypoints_queue = deque(maxlen=100000)
         self._d_dist = 0.4
         self._sample_resolution = 2.0
         # state of lane_change
@@ -67,20 +68,38 @@ class Xagent(BasicAgent):
         self._last_traffic_light = None
         self._last_traffic_waypoint = None
 
-        self._model.solver_basis(Q=np.diag([10, 10, 10, 1.5, 0.1]), Rd=np.diag([1.0, 1000.0]))
+        self._model.solver_basis(Q=np.diag([10, 10, 10, 1, 0.1]), Rd=np.diag([1.0, 1000.0]))
         self.Q_origin = copy.deepcopy(self._model.Q)
         self._log_data = []
         self._simu_time = 0
         
         self._global_planner = GlobalRoutePlanner(self._map, self._sample_resolution)
-        
+        # Change parameters according to the dictionary
+        opt_dict = {}
+        opt_dict['target_speed'] = target_speed
+        if 'ignore_traffic_lights' in opt_dict:
+            self._ignore_traffic_lights = opt_dict['ignore_traffic_lights']
+        if 'ignore_stop_signs' in opt_dict:
+            self._ignore_stop_signs = opt_dict['ignore_stop_signs']
+        if 'ignore_vehicles' in opt_dict:
+            self._ignore_vehicles = opt_dict['ignore_vehicles']
+        if 'sampling_resolution' in opt_dict:
+            self._sampling_resolution = opt_dict['sampling_resolution']
+        if 'base_tlight_threshold' in opt_dict:
+            self._base_tlight_threshold = opt_dict['base_tlight_threshold']
+        if 'base_vehicle_threshold' in opt_dict:
+            self._base_vehicle_threshold = opt_dict['base_vehicle_threshold']
+        if 'max_brake' in opt_dict:
+            self._max_steering = opt_dict['max_brake']
+        self._local_planner = LocalPlanner(self._vehicle, opt_dict)
+        self._route_assigned = False
         self.dist_move = 0.2
         self.dist_step = 1.5
 
     def plan_route(self, start_location, end_location):
         self._route = self.trace_route(start_location.location, end_location.location)
         for i in self._route:
-            self._waypoints_queue.append(i)
+            self._local_planner._waypoints_queue.append(i)
 
     def calc_ref_trajectory_in_T_step(self, node, ref_path, sp):
         """
@@ -140,10 +159,10 @@ class Xagent(BasicAgent):
         self._min_distance = self._base_min_distance + 0.5 * vehicle_speed
 
         # - Get waypoints
-        if len(self._waypoints_queue) == 0:
+        if len(self._local_planner._waypoints_queue) == 0:
             raise Exception("No waypoints to follow")
         else:
-            carla_wp, _ = np.array(self._waypoints_queue).T
+            carla_wp, _ = np.array(self._local_planner._waypoints_queue).T
             waypoints = []
             v = math.sqrt(current_state[3]**2+current_state[4]**2)
             waypoints.append(
@@ -153,25 +172,26 @@ class Xagent(BasicAgent):
             # delete the same waypoints to solve the problem of spline interpolation(NaN)
             last_state = None
             for wp in carla_wp:
-                if cnt > 30:
+                if cnt > 10:
                     break
                 cnt += 1
                 t = wp.transform
                 ref_state = ca_u.carla_vector_to_rh_vector(
                     [t.location.x, t.location.y], t.rotation.yaw)
                 if last_state is not None:
-                    if np.sqrt(ref_state[0]**2+ref_state[1]**2) - last_state < 0.005:
+                    if (ref_state[0]-last_state[0])**2+(ref_state[1]-last_state[1])**2 < 0.001:
+                        # print('same waypoints!!! continue')
                         continue
                 waypoints.append([ref_state[0], ref_state[1],
                                  self._model.target_v, ref_state[2]])
-                last_state = np.sqrt(ref_state[0]**2+ref_state[1]**2)
+                last_state = [ref_state[0],ref_state[1]]
 
             waypoints = np.array(waypoints).T
 
         num_waypoint_removed = 0
 
-        for waypoint, _ in self._waypoints_queue:
-            if len(self._waypoints_queue) - num_waypoint_removed == 1:
+        for waypoint, _ in self._local_planner._waypoints_queue:
+            if len(self._local_planner._waypoints_queue) - num_waypoint_removed == 1:
                 min_distance = 1  # Don't remove the last waypoint until very close by
             else:
                 min_distance = self._min_distance
@@ -183,8 +203,12 @@ class Xagent(BasicAgent):
 
         if num_waypoint_removed > 0:
             for _ in range(num_waypoint_removed):
-                self._waypoints_queue.popleft()
+                moved_wp = self._local_planner._waypoints_queue.popleft()
+            if veh_location.distance(self._local_planner._waypoints_queue[0][0].transform.location) > 10:
+                self._local_planner._waypoints_queue.appendleft(moved_wp)
 
+        # if the distance from the vehicle to the first waypoint is farther than 10 m, add the last moved waypoint to the queue
+        
         # - Interplote the waypoints
         # t_0 = time.time()
         cx, cy, cyaw, ck, s = itp.calc_spline_course_carla(
@@ -226,7 +250,8 @@ class Xagent(BasicAgent):
         # self._world.debug.draw_point(tmp2_location, size=0.5,  life_time=0.1)
     
         # - Obstacle constraints
-        obs, heights, obs_infer = self._env.get_obs(current_state)
+        obs, heights, obs_infer, vehicle_sizes = self._env.get_obs(current_state)
+        # print('vehicle_sizes:', vehicle_sizes)
         obs_infer = list(obs_infer)
         for i in range(len(obs_infer)):
             obs_infer[i] = obs_infer[i].tolist()
@@ -238,7 +263,7 @@ class Xagent(BasicAgent):
                 # self._world.debug.draw_point(carla.Location(x=centers[0][0], y=-centers[0][1], z=3), size=0.2,  life_time=0.1)
                 # self._world.debug.draw_point(carla.Location(x=centers[1][0], y=-centers[1][1], z=3), size=0.2,  life_time=0.1)
                 bb = carla.BoundingBox(carla.Location(x=temp_obs[i][0], y=-temp_obs[i][1], z=heights[i]+1.0),\
-                                       carla.Vector3D(2, 1, 0.8))
+                                       carla.Vector3D(vehicle_sizes[i][0], vehicle_sizes[i][1], vehicle_sizes[i][2]))
                 self._world.debug.draw_box(bb, carla.Rotation(yaw=np.degrees(-temp_obs[i][2])), thickness=0.03, life_time=2*self._dt)
                 for j in range(len(obs_infer[i])):
                     self._world.debug.draw_point(carla.Location(x=obs_infer[i][j][0], y=-obs_infer[i][j][1], z=heights[i]+1.5), size=0.06,  life_time=2*self._dt)
@@ -287,18 +312,18 @@ class Xagent(BasicAgent):
         left_bound = wp_y + 1.75
         right_bound = wp_y - 1.75
         
-        lcrossable_list = [carla.LaneMarkingType.Broken, carla.LaneMarkingType.BrokenBroken, carla.LaneMarkingType.SolidBroken]
-        rcrossable_list = [carla.LaneMarkingType.Broken, carla.LaneMarkingType.BrokenBroken, carla.LaneMarkingType.BrokenSolid]
-        lncrossable_list = [carla.LaneMarkingType.Solid, carla.LaneMarkingType.BrokenSolid, carla.LaneMarkingType.SolidSolid]
-        rncrossable_list = [carla.LaneMarkingType.Solid, carla.LaneMarkingType.SolidBroken, carla.LaneMarkingType.SolidSolid]
+        lcrossable_list = [carla.LaneMarkingType.Broken]
+        rcrossable_list = [carla.LaneMarkingType.Broken]
+        lncrossable_list = [carla.LaneMarkingType.Solid, carla.LaneMarkingType.BrokenSolid, carla.LaneMarkingType.SolidSolid , carla.LaneMarkingType.BrokenBroken, carla.LaneMarkingType.SolidBroken]
+        rncrossable_list = [carla.LaneMarkingType.Solid, carla.LaneMarkingType.SolidBroken, carla.LaneMarkingType.SolidSolid, carla.LaneMarkingType.BrokenBroken, carla.LaneMarkingType.BrokenSolid]
         # lc_bool = lnc_bool = rc_bool = rnc_bool = False
         self._model.Q = self.Q_origin
         vpf_offset = 0.25
         
         # if the vehicle will turn left or right, set nc_road_pf
-        if self._waypoints_queue[0][1].value == 2 or self._waypoints_queue[3][1].value == 2:
+        if self._local_planner._waypoints_queue[0][1].value == 2 or self._local_planner._waypoints_queue[3][1].value == 2:
             # if rhe vehicle has crossed the road lane, set ordinary PF
-            if self.lat_dis_wp_ev(self._waypoints_queue[1][0], self._env.ego_vehicle) < 1.7:
+            if self.lat_dis_wp_ev(self._local_planner._waypoints_queue[1][0], self._env.ego_vehicle) < 1.7:
                 self._model.solver_add_nc_road_pf([[left_bound, 1]], wp_yaw, carla=True)
                 apf_nc_road += self._model.nc_road_pf([[left_bound, 1]], ref_traj, wp_yaw)
             elif wp.left_lane_marking.type in lcrossable_list:
@@ -310,24 +335,24 @@ class Xagent(BasicAgent):
                 # lnc_bool = True
                 self._model.solver_add_nc_road_pf([[left_bound, 1]], wp_yaw, carla=True)
                 apf_nc_road += self._model.nc_road_pf([[left_bound, 1]], ref_traj, wp_yaw)
-            # elif wp.left_lane_marking.type == carla.LaneMarkingType.NONE:
-            #     # get the waypoint the vehicle is following
-            #     waypoint_now = self._waypoints_queue[0][0]
-            #     waypoint_now = [waypoint_now.transform.location.x, waypoint_now.transform.location.y, waypoint_now.transform.rotation.yaw]
-            #     # draw the waypoint
-            #     self._world.debug.draw_point(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=2), size=0.1,  life_time=0.1, color=carla.Color(0,0,255))
-            #     wp_ref = carla.Transform(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=0.05), carla.Rotation(yaw=np.degrees(waypoint_now[2])))
-            #     wp_ref_yaw = -np.radians(wp_ref.rotation.yaw)
-            #     wp_y = np.sin(-wp_ref_yaw)*wp_ref.location.x + np.cos(-wp_ref_yaw)*-wp_ref.location.y  # rotate along the reverce direction of wp_yaw
-            #     wp_x = np.cos(-wp_ref_yaw)*wp_ref.location.x - np.sin(-wp_ref_yaw)*-wp_ref.location.y
-            #     left_bound = wp_y + 1.75
-            #     right_bound = wp_y - 1.75
-            #     # increase the position tracking cost
-            #     self._model.Q[0, 0] = 10
-            #     self._model.Q[1, 1] = 10
-            #     # set a relaxed virtual PF for the unknown lane
-            #     self._model.solver_add_nc_road_pf([[left_bound+vpf_offset, -1]], wp_yaw, carla=True)
-            #     apf_nc_road += self._model.nc_road_pf([[left_bound+vpf_offset , -1]], ref_traj, wp_yaw)
+            elif wp.left_lane_marking.type == carla.LaneMarkingType.NONE:
+                # get the waypoint the vehicle is following
+                waypoint_now = self._local_planner._waypoints_queue[0][0]
+                waypoint_now = [waypoint_now.transform.location.x, waypoint_now.transform.location.y, waypoint_now.transform.rotation.yaw]
+                # draw the waypoint
+                self._world.debug.draw_point(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=2), size=0.1,  life_time=0.1, color=carla.Color(0,0,255))
+                wp_ref = carla.Transform(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=0.05), carla.Rotation(yaw=np.degrees(waypoint_now[2])))
+                wp_ref_yaw = -np.radians(wp_ref.rotation.yaw)
+                wp_y = np.sin(-wp_ref_yaw)*wp_ref.location.x + np.cos(-wp_ref_yaw)*-wp_ref.location.y  # rotate along the reverce direction of wp_yaw
+                wp_x = np.cos(-wp_ref_yaw)*wp_ref.location.x - np.sin(-wp_ref_yaw)*-wp_ref.location.y
+                left_bound = wp_y + 1.75
+                right_bound = wp_y - 1.75
+                # increase the position tracking cost
+                self._model.Q[0, 0] = 10
+                self._model.Q[1, 1] = 10
+                # set a relaxed virtual PF for the unknown lane
+                self._model.solver_add_nc_road_pf([[left_bound+vpf_offset, -1]], wp_yaw, carla=True)
+                apf_nc_road += self._model.nc_road_pf([[left_bound+vpf_offset , -1]], ref_traj, wp_yaw)
         elif wp.left_lane_marking.type in lcrossable_list:
             # lc_bool = True
             # pass
@@ -357,9 +382,9 @@ class Xagent(BasicAgent):
         #     self._model.solver_add_nc_road_pf([[left_bound+vpf_offset, -1]], wp_yaw, carla=True)
         #     apf_nc_road += self._model.nc_road_pf([[left_bound+vpf_offset, -1]], ref_traj, wp_yaw)
         # if the vehicle will turn left or right, set nc_road_pf
-        if self._waypoints_queue[0][1].value == 1 or self._waypoints_queue[3][1].value == 1:
+        if self._local_planner._waypoints_queue[0][1].value == 1 or self._local_planner._waypoints_queue[3][1].value == 1:
             # if the vehicle has crossed the road lane, set ordinary PF
-            if self.lat_dis_wp_ev(self._waypoints_queue[0][0], self._env.ego_vehicle) < 1.70:
+            if self.lat_dis_wp_ev(self._local_planner._waypoints_queue[0][0], self._env.ego_vehicle) < 1.70:
                 self._model.solver_add_nc_road_pf([[right_bound, -1]], wp_yaw, carla=True)
                 apf_nc_road += self._model.nc_road_pf([[right_bound, -1]], ref_traj, wp_yaw)
             elif wp.right_lane_marking.type in rcrossable_list:
@@ -371,25 +396,25 @@ class Xagent(BasicAgent):
                 # rnc_bool = True
                 self._model.solver_add_nc_road_pf([[right_bound, -1]], wp_yaw, carla=True)
                 apf_nc_road += self._model.nc_road_pf([[right_bound, -1]], ref_traj, wp_yaw)
-            # elif wp.right_lane_marking.type == carla.LaneMarkingType.NONE:
-            #     # get the waypoint the vehicle is following
-            #     # waypoint_now = ref_traj[:,0]
-            #     waypoint_now = self._waypoints_queue[0][0]
-            #     waypoint_now = [waypoint_now.transform.location.x, waypoint_now.transform.location.y, waypoint_now.transform.rotation.yaw]
-            #     # draw the waypoint with blue color
-            #     self._world.debug.draw_point(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=2), size=0.1,  life_time=0.1, color=carla.Color(0,0,255))
-            #     wp_ref = carla.Transform(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=0.05), carla.Rotation(yaw=np.degrees(waypoint_now[2])))
-            #     wp_ref_yaw = -np.radians(wp_ref.rotation.yaw)
-            #     wp_y = np.sin(-wp_ref_yaw)*wp_ref.location.x + np.cos(-wp_ref_yaw)*-wp_ref.location.y  # rotate along the reverce direction of wp_yaw
-            #     wp_x = np.cos(-wp_ref_yaw)*wp_ref.location.x - np.sin(-wp_ref_yaw)*-wp_ref.location.y
-            #     left_bound = wp_y + 1.75
-            #     right_bound = wp_y - 1.75
-            #     # increase the position tracking cost
-            #     self._model.Q[0, 0] = 10
-            #     self._model.Q[1, 1] = 10
-            #     # set a relaxed virtual PF for the unknown lane
-            #     self._model.solver_add_nc_road_pf([[right_bound-vpf_offset, -1]], wp_yaw, carla=True)
-            #     apf_nc_road += self._model.nc_road_pf([[right_bound-vpf_offset , -1]], ref_traj, wp_yaw)
+            elif wp.right_lane_marking.type == carla.LaneMarkingType.NONE:
+                # get the waypoint the vehicle is following
+                # waypoint_now = ref_traj[:,0]
+                waypoint_now = self._local_planner._waypoints_queue[0][0]
+                waypoint_now = [waypoint_now.transform.location.x, waypoint_now.transform.location.y, waypoint_now.transform.rotation.yaw]
+                # draw the waypoint with blue color
+                self._world.debug.draw_point(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=2), size=0.1,  life_time=0.1, color=carla.Color(0,0,255))
+                wp_ref = carla.Transform(carla.Location(x=waypoint_now[0], y=waypoint_now[1], z=0.05), carla.Rotation(yaw=np.degrees(waypoint_now[2])))
+                wp_ref_yaw = -np.radians(wp_ref.rotation.yaw)
+                wp_y = np.sin(-wp_ref_yaw)*wp_ref.location.x + np.cos(-wp_ref_yaw)*-wp_ref.location.y  # rotate along the reverce direction of wp_yaw
+                wp_x = np.cos(-wp_ref_yaw)*wp_ref.location.x - np.sin(-wp_ref_yaw)*-wp_ref.location.y
+                left_bound = wp_y + 1.75
+                right_bound = wp_y - 1.75
+                # increase the position tracking cost
+                self._model.Q[0, 0] = 10
+                self._model.Q[1, 1] = 10
+                # set a relaxed virtual PF for the unknown lane
+                self._model.solver_add_nc_road_pf([[right_bound-vpf_offset, -1]], wp_yaw, carla=True)
+                apf_nc_road += self._model.nc_road_pf([[right_bound-vpf_offset , -1]], ref_traj, wp_yaw)
 
         elif wp.right_lane_marking.type in rcrossable_list:
             # rc_bool = True
@@ -448,7 +473,7 @@ class Xagent(BasicAgent):
         # add the cost of the SVs' apf
         
         if len(obs) > 0:
-            self._model.solver_add_soft_obs(obs_infer, carla=True)
+            self._model.solver_add_soft_obs(obs_infer, sizes=vehicle_sizes,carla=True)
         # self._model.solver_add_hard_obs(obs, carla=True)
         # time_1 = time.time()-tick
         

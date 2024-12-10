@@ -12,7 +12,7 @@ license: MIT
 import math
 import numpy as np
 import bisect
-
+import time
 
 class Spline:
     u"""
@@ -40,10 +40,20 @@ class Spline:
 
         # calc spline coefficient b and d
         for i in range(self.nx - 1):
-            self.d.append((self.c[i + 1] - self.c[i]) / (3.0 * h[i]))
-            tb = (self.a[i + 1] - self.a[i]) / h[i] - h[i] * \
-                (self.c[i + 1] + 2.0 * self.c[i]) / 3.0
-            self.b.append(tb)
+            try:
+                self.d.append((self.c[i + 1] - self.c[i]) / (3.0 * h[i]))
+                tb = (self.a[i + 1] - self.a[i]) / h[i] - h[i] * \
+                    (self.c[i + 1] + 2.0 * self.c[i]) / 3.0
+                self.b.append(tb)
+            except:
+                print("Error: ", i)
+                print("h: ", h)
+                print("a: ", self.a)
+                print("c: ", self.c)
+                print("b: ", self.b)
+                print("d: ", self.d)
+                print("Watct out! Debugging")
+                time.sleep(1000)
 
     def calc(self, t):
         u"""
@@ -349,7 +359,7 @@ def calc_speed_profile(cx, cy, cyaw, target_speed):
         else:
             speed_profile[i] = target_speed
 
-    speed_profile[-1] = 0.0
+    # speed_profile[-1] = 0.0
 
     return speed_profile
 
@@ -372,8 +382,10 @@ class PATH:
         dx = [node[0] - x for x in self.cx[self.ind_old: (self.ind_old + N_IND)]]
         dy = [node[1] - y for y in self.cy[self.ind_old: (self.ind_old + N_IND)]]
         dist = np.hypot(dx, dy)
-
-        ind_in_N = int(np.argmin(dist))
+        try:
+            ind_in_N = int(np.argmin(dist))
+        except:
+            ind_in_N = 0
         ind = self.ind_old + ind_in_N
         self.ind_old = ind
 

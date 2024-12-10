@@ -28,7 +28,7 @@ import cv2
 import joblib
 from carla_birdeye_view import (BirdViewCropType, BirdViewProducer,
                                 PixelDimensions)
-from others_agent import OthersAgent
+# from others_agent import OthersAgent
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 
@@ -133,10 +133,10 @@ class PIDAccelerationController():
         threashold = 3/20
         if delta_acc > threashold:
             acc_pred = self.last_control[0] + threashold
-            print("acc_pred:", acc_pred)
+            # print("acc_pred:", acc_pred)
         elif delta_acc < -threashold:
             acc_pred = self.last_control[0] - threashold
-            print("acc_pred:", acc_pred)
+            # print("acc_pred:", acc_pred)
         self.last_control[0] = acc_pred
         
         return np.clip(acc_pred, -1.0, 1.0)
@@ -218,6 +218,8 @@ class Env:
                 if actor.attributes.get('role_name') == 'hero':
                     self.ego_vehicle = actor
                     break
+            if self.ego_vehicle is None:
+                logging.error('Hero actor not found')
 
         global DT_, DISPLAY_METHOD, HFC_HZ
         DT_ = dt
@@ -262,8 +264,9 @@ class Env:
         elif DISPLAY_METHOD == 'spec':
             self.spectator = self.world.get_spectator()
         else:
-            raise ValueError('display_method should be pygame or spec')
-            exit()
+            # raise ValueError('display_method should be pygame or spec')
+            # exit()
+            print('Leaderboard mode, no display method is selected!')
 
         # update if spawn vehicles
         self.spawn_others_bool = False
@@ -271,7 +274,13 @@ class Env:
 
         self.recording = recording
 
-
+    def ego_vehicle_search(self):
+        for actor in self.world.get_actors():
+            if actor.attributes.get('role_name') == 'hero':
+                self.ego_vehicle = actor
+                break
+        if self.ego_vehicle is None:
+            logging.error('Hero actor not found')
     def reset(self, ego_transform=None):
         """
         initial environment
@@ -291,56 +300,62 @@ class Env:
         if self.If_record_pede_history:
             self.pedestrian_history_list = []
 
-        # choose a random point for generation
-        if ego_transform is None:
-            spawn_point = random.choice(
-                self.world.get_map().get_spawn_points())
-        else:
-            spawn_point = ego_transform
+        # add all the vehicles (not the hero) to the other_vehicles_list and add all the pedestrians to the pedestrian_list
+        for actor in self.world.get_actors():
+            if actor.attributes.get('role_name') != 'hero' and 'vehicle' in actor.type_id:
+                self.other_vehicles_list.append(actor)
+                self.other_vehicles_queue_list.append(queue.Queue(maxsize=15))
+                if self.If_record_sv_history:
+                    self.other_vehicles_history_list.append([])
+            if 'walker' in actor.type_id:
+                self.pedestrian_list.append(actor)
+                self.pedestrian_queue_list.append(queue.Queue(maxsize=15))
+                if self.If_record_pede_history:
+                    self.pedestrian_history_list.append([])
 
-        if self.ego_vehicle is None:
-            self.ego_vehicle = self.world.spawn_actor(
-                self.ego_vehicle_type, spawn_point)
-            # # change the max steering angle of the vehicle [FAILED]
-            # physics_control = self.ego_vehicle.get_physics_control()
-            # physics_control.wheels[0].max_steer_angle = 36 # set max steer angle to 36 deg
-            # physics_control.wheels[1].max_steer_angle = 36 # set max steer angle to 36 deg
-            # self.ego_vehicle.apply_physics_control(physics_control)
-            # # print current max steer angle
-            # print('max steer angle: ', self.ego_vehicle.get_physics_control().wheels[0].max_steer_angle, \
-            #       self.ego_vehicle.get_physics_control().wheels[1].max_steer_angle)
-            self.actor_list.append(self.ego_vehicle)
-        else:
-            self.ego_vehicle.set_transform(spawn_point)
+
+        # choose a random point for generation
+        # if ego_transform is None:
+        #     spawn_point = random.choice(
+        #         self.world.get_map().get_spawn_points())
+        # else:
+        #     spawn_point = ego_transform
+
+        # if self.ego_vehicle is None:
+        #     self.ego_vehicle = self.world.spawn_actor(
+        #         self.ego_vehicle_type, spawn_point)
+        #     # # change the max steering angle of the vehicle [FAILED]
+        #     # physics_control = self.ego_vehicle.get_physics_control()
+        #     # physics_control.wheels[0].max_steer_angle = 36 # set max steer angle to 36 deg
+        #     # physics_control.wheels[1].max_steer_angle = 36 # set max steer angle to 36 deg
+        #     # self.ego_vehicle.apply_physics_control(physics_control)
+        #     # # print current max steer angle
+        #     # print('max steer angle: ', self.ego_vehicle.get_physics_control().wheels[0].max_steer_angle, \
+        #     #       self.ego_vehicle.get_physics_control().wheels[1].max_steer_angle)
+        #     self.actor_list.append(self.ego_vehicle)
+        # else:
+        #     self.ego_vehicle.set_transform(spawn_point)
         
         self._acc_controller = PIDAccelerationController(self.ego_vehicle, K_P=0.34, K_I=0.01, K_D=0.001, dt=DT_/HFC_HZ) # original K_P=0.28, K_I=0.01, K_D=0.001
 
-        if self.ego_vehicle is not None:
-            # setting camera information
-            camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-            camera_bp.set_attribute('image_size_x', '{}'.format(RES_X))
-            camera_bp.set_attribute('image_size_y', '{}'.format(RES_Y))
-            ifFPV = True
-            if ifFPV:
-                camera_bp.set_attribute('fov', '110')
-                camera_pos = carla.Transform(carla.Location(x=-6, z=3))
-                attached_obj = self.ego_vehicle
-            else:
-                camera_pos = carla.Transform(carla.Location(z=0), carla.Rotation(pitch=0))
-                attached_obj = self.spectator
-            # camera_bp.set_attribute('fov', '110')
-            # camera_pos = carla.Transform(carla.Location(x=-6, z=3))
-            
-            self.camera = self.world.spawn_actor(
-                camera_bp,
-                camera_pos,
-                attach_to=attached_obj)
-            self.camera.image_size_x = 720
-            self.camera.image_size_x = 480
-            if self.recording:
-                self.actor_list.append(self.camera)
-                # self.image_queue = queue.Queue()
-                self.camera.listen(lambda image: image.save_to_disk('images/' + str(self.dir_name) + '/%06d.png' % image.frame_number))
+        # if self.ego_vehicle is not None:
+        #     # setting camera information
+        #     camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+        #     camera_bp.set_attribute('image_size_x', '{}'.format(RES_X))
+        #     camera_bp.set_attribute('image_size_y', '{}'.format(RES_Y))
+        #     # camera_bp.set_attribute('fov', '110')
+        #     # camera_pos = carla.Transform(carla.Location(x=-6, z=3))
+        #     camera_pos = carla.Transform(carla.Location(z=0), carla.Rotation(pitch=0))
+        #     self.camera = self.world.spawn_actor(
+        #         camera_bp,
+        #         camera_pos,
+        #         attach_to=self.spectator)
+        #     self.camera.image_size_x = 720
+        #     self.camera.image_size_x = 480
+        #     if self.recording:
+        #         self.actor_list.append(self.camera)
+        #         # self.image_queue = queue.Queue()
+        #         self.camera.listen(lambda image: image.save_to_disk('images/' + str(self.dir_name) + '/%06d.png' % image.frame_number))
 
         self.time = 0
 
@@ -386,7 +401,8 @@ class Env:
                         self.other_vehicles_history_list.append([])
 
                 else:
-                    agent = OthersAgent(vehicle)
+                    # agent = OthersAgent(vehicle)
+                    agent = None
                     self.spawn_other_agents.append(agent)
                     self.other_vehicles_list.append(vehicle)
                     self.other_vehicles_queue_list.append(queue.Queue(maxsize=15))
@@ -536,6 +552,7 @@ class Env:
         heights = [] # the height of the SVs, for the bounding box drawing in Carla
         obs_infer = []
         infer_time_once = []
+        vehicle_sizes = []
         # add the current states of the SVs to the state queue for trajectory prediction:
         for sv in self.other_vehicles_list:
             sv_state = sv.get_transform()
@@ -555,12 +572,15 @@ class Env:
             location = car.get_location()
             transform = car.get_transform()
             phi = transform.rotation.yaw * np.pi / 180
-            if cur_state is None:
+            # if cur_state is None:
+            if False:
                 obs.append([location.x, -location.y, -phi])
             else:
                 dist = np.sqrt((location.x-cur_state[0])**2 + (-location.y-cur_state[1])**2)
-                if dist < dist_threshold:
+                # detect the relative angle between the ego vehicle and the SVs
+                if dist < dist_threshold and np.abs(phi + cur_state[2])%6.28 < 3.14/2:
                     obs.append([location.x, -location.y, -phi])
+                    vehicle_sizes.append([car.bounding_box.extent.x, car.bounding_box.extent.y, car.bounding_box.extent.z])
                     obs_hist=self.other_vehicles_queue_list[self.other_vehicles_list.index(car)].queue
                     obs_hist = np.array(obs_hist)
                     # if the queue is not full, fill it with the oldest state from the queue
@@ -600,7 +620,7 @@ class Env:
             # print("gpr infer time: ", tock-tick)
         elif self.inferMethod == "lstm":
             self.lstm_infer_times.append(infer_time_sum)
-        return obs, heights, obs_infer
+        return obs, heights, obs_infer, vehicle_sizes
 
     def norm_pre_states(self, history_data):
         self.extract_val = copy.deepcopy(history_data[0][0:2])
@@ -654,17 +674,17 @@ class Env:
         """
         if not transform_mode:
             steer_ = state[1]*self.steer_ratio # transform the steering angle from rad to -1~1
-            print("steer_:", steer_)
+            # print("steer_:", steer_)
             delta_steer = steer_ - self._acc_controller.last_control[1]
             threashold = 4.71/20*self.steer_ratio # 9.42; 4.71
             if delta_steer > threashold:
                 steer_ = self._acc_controller.last_control[1] + threashold
-                print("last_steer:", self._acc_controller.last_control[1])
-                print("steer_processed:", steer_)
+                # print("last_steer:", self._acc_controller.last_control[1])
+                # print("steer_processed:", steer_)
             elif delta_steer < -threashold:
                 steer_ = self._acc_controller.last_control[1] - threashold
-                print("last_steer:", self._acc_controller.last_control[1])
-                print("steer_processed:", steer_)
+                # print("last_steer:", self._acc_controller.last_control[1])
+                # print("steer_processed:", steer_)
             self._acc_controller.last_control[1] = steer_
             
 
@@ -689,7 +709,7 @@ class Env:
                     
 
                     self.world.tick()
-            
+            return throttle_, steer_, reverse_
         else:
             steer_ = state[1]
             accelerate_ = state[0]
@@ -788,7 +808,7 @@ class Env:
             # spectator_transform.location.x -= 6*math.cos(math.radians(spectator_transform.rotation.yaw))
             # spectator_transform.location.y -= 6*math.sin(math.radians(spectator_transform.rotation.yaw))
             # self.spectator.set_transform(spectator_transform)                                                 
-        return throttle_, steer_, reverse_
+
     def clean(self):
         """
         restore carla's settings and destroy all created actors when the program exits
