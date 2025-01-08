@@ -1,10 +1,13 @@
 # UDMC: Unified Decision-Making and Control Framework for Urban Autonomous Driving with Motion Prediction of Traffic Participants
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/henryhcliu/udmc_carla/blob/main/LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.0-brightgreen)](https://github.com/henryhcliu/udmc_carla/releases/tag/v1.0)
+[![arXiv](https://img.shields.io/badge/arXiv-2501.02530-b31b1b.svg)](https://arxiv.org/abs/2501.02530)
 
-> This autonomous driving framework (named UDMC) is based on optimization methods, so it is lightweight, interpretable, and adaptable to various driving scenarios.
+> This autonomous driving framework (named UDMC) is based on nonparametric Bayesian learning and optimization methods, so it is lightweight, interpretable, and adaptable to various driving scenarios.
 
-> Live demo [https://www.youtube.com/watch?v=jftTsf1jXjU](https://www.youtube.com/watch?v=jftTsf1jXjU).
+> Live demo: [https://www.youtube.com/watch?v=jftTsf1jXjU](https://www.youtube.com/watch?v=jftTsf1jXjU).
+
+> Preprint: [https://arxiv.org/abs/2501.02530](https://arxiv.org/abs/2501.02530).
 
 ## Table of Contents
 * [General Info](#general-information)
