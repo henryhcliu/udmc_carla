@@ -26,8 +26,8 @@ import math
 import carla
 import cv2
 import joblib
-from carla_birdeye_view import (BirdViewCropType, BirdViewProducer,
-                                PixelDimensions)
+# from carla_birdeye_view import (BirdViewCropType, BirdViewProducer,
+#                                 PixelDimensions)
 from others_agent import OthersAgent
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel

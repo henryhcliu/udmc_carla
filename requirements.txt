@@ -10,4 +10,3 @@ carla==0.9.14
 scikit-learn
 casadi
 keras
-carla-birdeye-view=1.1.1
