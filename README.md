@@ -9,6 +9,8 @@
 
 > Preprint: [https://arxiv.org/abs/2501.02530](https://arxiv.org/abs/2501.02530).
 
+> The paper has been published in **IEEE Transactions on Intelligent Transportation Systems (T-ITS)** and can be accessed [here](https://ieeexplore.ieee.org/document/10942456).
+
 ## Table of Contents
 * [General Info](#general-information)
 * [Technologies Used](#technologies-used)
