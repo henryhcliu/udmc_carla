@@ -279,6 +279,8 @@ for _ in range(10000):
         print(e)
         if env.If_record_sv_history:
             np.save('sv_history.npy', np.array(env.other_vehicles_history_list))
+        if env.If_record_pede_history:
+            np.save('pede_history.npy', np.array(env.pedestrian_history_list))
         # average and SD of inference time of gpr
         if env.inferMethod == 'gpr':
             print('Average inference time of gpr: ', np.mean(env.gpr_infer_times))
