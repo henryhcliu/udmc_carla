@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import time
 
 # Load the data
-data = np.load('data_w_real_steer_70_3.npy')
+data = np.load('data_w_real_steer_70_train.npy')
 X = data[:, :-2]
 # X[1,:] = -X[1,:] # flip y axis
 U = data[:, -2:]
@@ -86,12 +86,12 @@ print(f'Maximum error: {np.max(np.linalg.norm(X - X_est, axis=1))}')
 
 fig = plt.figure()
 sub1 = fig.add_subplot(221)
-plt.plot(X[:,0]-X_est[:,0], label='Error of x')
-plt.plot(X[:,1]-X_est[:,1], label='Error of y')
+plt.plot(X[:,0]-X_est[:,0], label='Accumulated Error of x')
+plt.plot(X[:,1]-X_est[:,1], label='Accumulated Error of y')
 plt.legend()
 sub2 = fig.add_subplot(222)
 plt.plot(X[:,0], X[:,1], label='Ground truth of route')
-plt.plot(X_est[:,0], X_est[:,1], label='Estimated of route')
+plt.plot(X_est[:,0], X_est[:,1], label='Estimated of route (Accumulated)')
 plt.legend()
 # test using pure estimated data
 for i in range(X.shape[0] - 1):
@@ -103,16 +103,16 @@ for i in range(X.shape[0] - 1):
 print(f'Average error: {np.mean(np.linalg.norm(X - X_est, axis=1))}')
 print(f'Maximum error: {np.max(np.linalg.norm(X - X_est, axis=1))}')
 sub3 = fig.add_subplot(223)
-plt.plot(X[:,0]-X_est[:,0], label='Error of x')
-plt.plot(X[:,1]-X_est[:,1], label='Error of y')
+plt.plot(X[:,0]-X_est[:,0], label='Sliding Window-based Error of x')
+plt.plot(X[:,1]-X_est[:,1], label='Sliding Window-based Error of y')
 plt.legend()
 sub4 = fig.add_subplot(224)
 plt.plot(X[:,0], X[:,1], label='Ground truth of route')
-plt.plot(X_est[:,0], X_est[:,1], label='Estimated of route')
+plt.plot(X_est[:,0], X_est[:,1], label='Estimated of route (Sliding Window)')
 plt.legend()
 plt.show()
 
-data_test = np.load("data_w_real_steer_70_1.npy")
+data_test = np.load("data_w_real_steer_70_test.npy")
 X_test = data_test[:, 0:6]
 U_test = data_test[:, 6:8]
 X_est_test = np.zeros_like(X_test)
@@ -124,12 +124,12 @@ print(f'Maximum error: {np.max(np.linalg.norm(X_test - X_est_test, axis=1))}')
 
 fig = plt.figure()
 sub1 = fig.add_subplot(221)
-plt.plot(X_test[:,0]-X_est_test[:,0], label='Error of x')
-plt.plot(X_test[:,1]-X_est_test[:,1], label='Error of y')
+plt.plot(X_test[:,0]-X_est_test[:,0], label='Accumulated Error of x')
+plt.plot(X_test[:,1]-X_est_test[:,1], label='Accumulated Error of y')
 plt.legend()
 sub2 = fig.add_subplot(222)
 plt.plot(X_test[:,0], X_test[:,1], label='Ground truth of route')
-plt.plot(X_est_test[:,0], X_est_test[:,1], label='Estimated of route')
+plt.plot(X_est_test[:,0], X_est_test[:,1], label='Estimated route (Accumulated)')
 plt.legend()
 # test using pure estimated data
 for i in range(X_test.shape[0] - 1):
@@ -141,12 +141,12 @@ for i in range(X_test.shape[0] - 1):
 print(f'Average error: {np.mean(np.linalg.norm(X_test - X_est_test, axis=1))}')
 print(f'Maximum error: {np.max(np.linalg.norm(X_test - X_est_test, axis=1))}')
 sub3 = fig.add_subplot(223)
-plt.plot(X_test[:,0]-X_est_test[:,0], label='Error of x')
-plt.plot(X_test[:,1]-X_est_test[:,1], label='Error of y')
+plt.plot(X_test[:,0]-X_est_test[:,0], label='Sliding Window-based Error of x')
+plt.plot(X_test[:,1]-X_est_test[:,1], label='Sliding Window-based Error of y')
 plt.legend()
 sub4 = fig.add_subplot(224)
 plt.plot(X_test[:,0], X_test[:,1], label='Ground truth of route')
-plt.plot(X_est_test[:,0], X_est_test[:,1], label='Estimated of route')
+plt.plot(X_est_test[:,0], X_est_test[:,1], label='Estimated of route (Sliding Window)')
 plt.legend()
 plt.show()
 
