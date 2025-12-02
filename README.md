@@ -67,3 +67,18 @@ Created by [@henryhcliu](https://henryhcliu.github.io) - feel free to contact me
 
 ## License
 This project is open source and available under the [MIT License](https://opensource.org/license/mit/).
+
+## Citation
+If you find this repository useful for your research, please consider citing the following paper:
+```bibtex
+@article{liu2025udmc,
+  author={Liu, Haichao and Chen, Kai and Li, Yulin and Huang, Zhenmin and Liu, Ming and Ma, Jun},
+  journal={IEEE Transactions on Intelligent Transportation Systems}, 
+  title={{UDMC}: Unified Decision-Making and Control Framework for Urban Autonomous Driving With Motion Prediction of Traffic Participants}, 
+  year={2025},
+  volume={26},
+  number={5},
+  pages={5856-5871},
+  doi={10.1109/TITS.2025.3551617}
+}
+```
